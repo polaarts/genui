@@ -15,7 +15,9 @@ Usuario nuevo → Onboarding (Configuración inicial)
                       ↓
               Guardar preferencias en estado/storage
                       ↓
-Usuario existente → Cargar configuración → Generar Dashboard
+Usuario existente → Cargar configuración → Generar Dashboard con AI
+                      ↓
+              AI analiza datos + perfil → Genera widgets personalizados
                       ↓
               Cambio de configuración detectado
                       ↓
@@ -35,14 +37,23 @@ Usuario existente → Cargar configuración → Generar Dashboard
 
 2. **Dashboard Principal** (`app/page.tsx`)
    - NO es un chat, es una grilla de widgets
-   - Los widgets se generan según la configuración del usuario
+   - Los widgets se generan vía AI según la configuración del usuario
    - Detecta cambios de configuración y regenera solo widgets afectados
+   - Usa `useDashboardData()` hook para cargar datos con AI
 
 3. **Sistema de Widgets** (componentes modulares)
-   - `ExpenseSummaryCard` - Resumen financiero
-   - `TransactionDataGrid` - Tabla de transacciones
-   - `CategoryPieChart` - Distribución por categorías
+   - `ExpenseSummaryCard` - Resumen financiero con sentimiento (AI-generated)
+   - `TransactionDataGrid` - Tabla de transacciones filtradas (AI-curated)
+   - `CategoryPieChart` - Distribución por categorías (AI-calculated)
+   - `BudgetProgress` - Barras de progreso con alertas (AI-analyzed)
+   - `AlertsCard` - Notificaciones inteligentes (AI-detected)
    - Cada widget tiene su skeleton de loading
+
+4. **AI Integration** (`app/actions.tsx`)
+   - `generateDashboard()` - Server Action que usa OpenAI para generar datos
+   - Usa `generateObject()` de AI SDK para respuestas estructuradas
+   - Schema validation con Zod para garantizar tipo seguro
+   - Prompts personalizados según perfil del usuario
 
 ---
 
