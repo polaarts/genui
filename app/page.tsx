@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUserConfig } from '@/lib/context/config-context';
 import { useDashboard } from '@/lib/hooks/use-dashboard';
+import { useDashboardData } from '@/lib/hooks/use-dashboard-data';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import { DashboardGrid } from '@/components/dashboard/dashboard-grid';
 import { DashboardSkeleton } from '@/components/dashboard/dashboard-skeleton';
@@ -14,14 +15,19 @@ import { ExpenseSummaryCard } from '@/components/expense-summary-card';
 import { TransactionDataGrid } from '@/components/transaction-data-grid';
 import { CategoryPieChart } from '@/components/category-pie-chart';
 
-// Importar datos mock
-import { MOCK_TRANSACTIONS, MOCK_BUDGETS } from '@/lib/mock-data';
+// Importar datos mock para fallback
 import { WidgetType } from '@/types';
 
 export default function DashboardPage() {
   const router = useRouter();
   const { userProfile, isLoading: configLoading } = useUserConfig();
   const { isRegenerating } = useDashboard(userProfile.dashboardConfig);
+  
+  // Nuevo: cargar datos del dashboard con AI
+  const { dashboardData, isLoading: dataLoading, refresh } = useDashboardData(
+    userProfile,
+    userProfile.isOnboarded
+  );
 
   // Redirect a onboarding si no ha completado el setup
   useEffect(() => {
@@ -30,13 +36,15 @@ export default function DashboardPage() {
     }
   }, [userProfile.isOnboarded, configLoading, router]);
 
-  // Mostrar loading mientras carga la configuración
-  if (configLoading) {
+  // Mostrar loading mientras carga la configuración o datos
+  if (configLoading || dataLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Cargando tu dashboard...</p>
+          <p className="text-gray-600">
+            {configLoading ? 'Cargando configuración...' : 'Generando tu dashboard personalizado...'}
+          </p>
         </div>
       </div>
     );
@@ -47,49 +55,49 @@ export default function DashboardPage() {
     return null;
   }
 
-  // Función helper para renderizar widgets según tipo
+  // Función helper para renderizar widgets según tipo CON DATOS DE AI
   const renderWidget = (widgetType: WidgetType) => {
     switch (widgetType) {
       case 'summary':
+        const summaryData = dashboardData?.summary;
+        if (!summaryData) return null;
+        
         return (
-          <WidgetWrapper title="Resumen Financiero" key="summary">
-            <ExpenseSummaryCard
-              sentiment="warning"
-              title="Estado del Mes"
-              message="Has gastado $1,265 de tu presupuesto de $900 en Ocio"
-              totalAmount={1265}
-            />
+          <WidgetWrapper title="Resumen Financiero" key="summary" onRefresh={refresh}>
+            <ExpenseSummaryCard {...summaryData} />
           </WidgetWrapper>
         );
 
       case 'transactions':
+        const transactionsData = dashboardData?.transactions;
+        if (!transactionsData?.transactions) return null;
+        
         return (
-          <WidgetWrapper title="Transacciones Recientes" key="transactions">
-            <TransactionDataGrid transactions={MOCK_TRANSACTIONS.slice(0, 5)} />
+          <WidgetWrapper title="Transacciones Recientes" key="transactions" onRefresh={refresh}>
+            <TransactionDataGrid transactions={transactionsData.transactions} />
           </WidgetWrapper>
         );
 
       case 'chart':
-        const chartData = [
-          { name: 'Comida', value: 120 },
-          { name: 'Transporte', value: 150 },
-          { name: 'Ocio', value: 1250 },
-          { name: 'Salud', value: 80 },
-        ];
+        const chartData = dashboardData?.chart;
+        if (!chartData) return null;
+        
         return (
-          <WidgetWrapper title="Distribución de Gastos" key="chart">
-            <CategoryPieChart title="Por Categoría" data={chartData} />
+          <WidgetWrapper title="Distribución de Gastos" key="chart" onRefresh={refresh}>
+            <CategoryPieChart {...chartData} />
           </WidgetWrapper>
         );
 
       case 'budget':
+        const budgetData = dashboardData?.budget;
+        if (!budgetData?.budgets) return null;
+        
         return (
-          <WidgetWrapper title="Progreso de Presupuesto" key="budget">
+          <WidgetWrapper title="Progreso de Presupuesto" key="budget" onRefresh={refresh}>
             <div className="space-y-4">
-              {MOCK_BUDGETS.map((budget) => {
-                const percentage = (budget.spent / budget.limit) * 100;
-                const isOverBudget = percentage > 100;
-                const isWarning = percentage > 75 && !isOverBudget;
+              {budgetData.budgets.map((budget) => {
+                const isOverBudget = budget.percentage > 100;
+                const isWarning = budget.percentage > 75 && !isOverBudget;
 
                 return (
                   <div key={budget.category}>
@@ -112,7 +120,7 @@ export default function DashboardPage() {
                           isWarning ? 'bg-amber-500' : 
                           'bg-emerald-500'
                         }`}
-                        style={{ width: `${Math.min(percentage, 100)}%` }}
+                        style={{ width: `${Math.min(budget.percentage, 100)}%` }}
                       />
                     </div>
                   </div>
@@ -123,50 +131,36 @@ export default function DashboardPage() {
         );
 
       case 'alerts':
+        const alertsData = dashboardData?.alerts;
+        if (!alertsData?.alerts || alertsData.alerts.length === 0) return null;
+        
         return (
-          <WidgetWrapper title="Alertas" key="alerts">
+          <WidgetWrapper title="Alertas" key="alerts" onRefresh={refresh}>
             <div className="space-y-3">
-              <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
-                <div className="flex items-start gap-2">
-                  <span className="text-red-600 text-xl">⚠️</span>
-                  <div>
-                    <h4 className="font-semibold text-red-900 text-sm">
-                      Presupuesto excedido
-                    </h4>
-                    <p className="text-red-700 text-xs mt-1">
-                      Has superado tu presupuesto de Ocio en $950
-                    </p>
-                  </div>
-                </div>
-              </div>
+              {alertsData.alerts.map((alert) => {
+                const colorMap = {
+                  danger: 'red',
+                  warning: 'amber',
+                  info: 'emerald',
+                };
+                const color = colorMap[alert.severity];
 
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                <div className="flex items-start gap-2">
-                  <span className="text-amber-600 text-xl">💡</span>
-                  <div>
-                    <h4 className="font-semibold text-amber-900 text-sm">
-                      Patrón detectado
-                    </h4>
-                    <p className="text-amber-700 text-xs mt-1">
-                      3 gastos en Uber en los últimos 2 días
-                    </p>
+                return (
+                  <div key={alert.id} className={`p-3 bg-${color}-50 border border-${color}-200 rounded-xl`}>
+                    <div className="flex items-start gap-2">
+                      <span className={`text-${color}-600 text-xl`}>{alert.emoji}</span>
+                      <div>
+                        <h4 className={`font-semibold text-${color}-900 text-sm`}>
+                          {alert.title}
+                        </h4>
+                        <p className={`text-${color}-700 text-xs mt-1`}>
+                          {alert.message}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-
-              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
-                <div className="flex items-start gap-2">
-                  <span className="text-emerald-600 text-xl">✓</span>
-                  <div>
-                    <h4 className="font-semibold text-emerald-900 text-sm">
-                      Buen progreso
-                    </h4>
-                    <p className="text-emerald-700 text-xs mt-1">
-                      Solo has usado el 30% de tu presupuesto de Comida
-                    </p>
-                  </div>
-                </div>
-              </div>
+                );
+              })}
             </div>
           </WidgetWrapper>
         );
@@ -192,7 +186,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Widgets Grid */}
-        {isRegenerating ? (
+        {isRegenerating || dataLoading ? (
           <DashboardSkeleton config={userProfile.dashboardConfig} />
         ) : (
           <DashboardGrid layout={userProfile.dashboardConfig.layout}>
@@ -201,7 +195,7 @@ export default function DashboardPage() {
         )}
 
         {/* Empty state si no hay widgets */}
-        {userProfile.dashboardConfig.activeWidgets.length === 0 && !isRegenerating && (
+        {userProfile.dashboardConfig.activeWidgets.length === 0 && !isRegenerating && !dataLoading && (
           <div className="text-center py-20">
             <div className="text-6xl mb-4">📊</div>
             <h3 className="text-xl font-semibold text-gray-700 mb-2">

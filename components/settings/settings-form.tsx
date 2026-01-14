@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { UserProfile, UserPersona, WidgetType } from '@/types';
+import { UserProfile, UserPersona } from '@/types';
 import { WidgetSelector } from './widget-selector';
 import { LayoutPicker } from './layout-picker';
 import { Save, User } from 'lucide-react';

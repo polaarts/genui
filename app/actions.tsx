@@ -1,10 +1,20 @@
 'use server';
 
 import { streamUI } from '@ai-sdk/rsc';
+import { generateObject } from 'ai';
 import { openai } from '@ai-sdk/openai';
 
 // Importamos los Schemas que acabamos de crear
-import { expenseSummarySchema, transactionListSchema, pieChartSchema } from '@/lib/ai/schemas';
+import { 
+  expenseSummarySchema, 
+  transactionListSchema, 
+  pieChartSchema,
+  dashboardOutputSchema,
+  type DashboardOutput 
+} from '@/lib/ai/schemas';
+
+// Importamos los prompts
+import { buildDashboardSystemPrompt, buildDashboardUserPrompt } from '@/lib/ai/prompts';
 
 // Importamos los Componentes Visuales (asegúrate de que las rutas sean correctas)
 import { ExpenseSummaryCard } from '@/components/expense-summary-card';
@@ -15,6 +25,112 @@ import { CategoryPieChart } from '@/components/category-pie-chart';
 import { MOCK_TRANSACTIONS, MOCK_BUDGETS } from '@/lib/mock-data';
 import { UserProfile } from '@/types';
 
+/**
+ * NUEVA Server Action: Genera dashboard completo basado en configuración del usuario
+ * Esta función reemplaza el enfoque de chat por generación estructurada de dashboard
+ */
+export async function generateDashboard(userProfile: UserProfile): Promise<DashboardOutput> {
+  try {
+    console.log('[generateDashboard] Starting generation for user:', userProfile.name);
+    console.log('[generateDashboard] Active widgets:', userProfile.dashboardConfig.activeWidgets);
+    
+    const systemPrompt = buildDashboardSystemPrompt(userProfile);
+    const userPrompt = buildDashboardUserPrompt(MOCK_TRANSACTIONS, MOCK_BUDGETS);
+
+    console.log('[generateDashboard] Calling OpenAI API...');
+    
+    const result = await generateObject({
+      model: openai('gpt-4o-mini'),
+      system: systemPrompt,
+      prompt: userPrompt,
+      schema: dashboardOutputSchema,
+      temperature: 0.3, // Un poco de creatividad para insights interesantes
+    });
+
+    console.log('[generateDashboard] Success! Generated data:', Object.keys(result.object));
+    
+    return result.object;
+  } catch (error) {
+    console.error('[generateDashboard] ERROR:', error);
+    console.error('[generateDashboard] Error details:', JSON.stringify(error, null, 2));
+    
+    // Fallback: retornar datos mock basados en widgets activos
+    const fallback: DashboardOutput = {};
+    
+    if (userProfile.dashboardConfig.activeWidgets.includes('summary')) {
+      fallback.summary = {
+        sentiment: 'warning',
+        title: 'Error al generar análisis',
+        message: 'Ocurrió un error al conectar con el servicio de análisis. Mostrando datos de ejemplo.',
+        totalAmount: 1265,
+      };
+    }
+    
+    if (userProfile.dashboardConfig.activeWidgets.includes('transactions')) {
+      fallback.transactions = {
+        transactions: MOCK_TRANSACTIONS.slice(0, 5).map(t => ({
+          id: t.id,
+          date: t.date,
+          merchant: t.merchant,
+          amount: t.amount,
+          category: t.category as any,
+          status: t.status as any,
+        })),
+      };
+    }
+    
+    if (userProfile.dashboardConfig.activeWidgets.includes('chart')) {
+      fallback.chart = {
+        title: 'Distribución por Categoría',
+        data: [
+          { name: 'Comida', value: 120 },
+          { name: 'Transporte', value: 150 },
+          { name: 'Ocio', value: 1250 },
+          { name: 'Salud', value: 80 },
+        ],
+      };
+    }
+    
+    if (userProfile.dashboardConfig.activeWidgets.includes('budget')) {
+      fallback.budget = {
+        budgets: MOCK_BUDGETS.map(b => ({
+          category: b.category,
+          spent: b.spent,
+          limit: b.limit,
+          percentage: (b.spent / b.limit) * 100,
+        })),
+      };
+    }
+    
+    if (userProfile.dashboardConfig.activeWidgets.includes('alerts')) {
+      fallback.alerts = {
+        alerts: [
+          {
+            id: '1',
+            severity: 'danger' as const,
+            emoji: '⚠️',
+            title: 'Presupuesto excedido',
+            message: 'Has superado tu presupuesto de Ocio en $950',
+          },
+          {
+            id: '2',
+            severity: 'warning' as const,
+            emoji: '💡',
+            title: 'Patrón detectado',
+            message: '3 gastos en Uber en los últimos 2 días',
+          },
+        ],
+      };
+    }
+    
+    return fallback;
+  }
+}
+
+/**
+ * Server Action LEGACY: Mantener para referencia o casos especiales
+ * Esta es la función original de chat
+ */
 export async function getFinancialResponse(input: string, userProfile: UserProfile) {
   
   const SYSTEM_PROMPT = `
@@ -65,10 +181,8 @@ export async function getFinancialResponse(input: string, userProfile: UserProfi
           // 2. Corrección de errores "al vuelo"
           // Si la IA nos manda un array por error (ej: props[0]), intentamos arreglarlo.
           let finalProps = props;
-          // @ts-ignore
           if (Array.isArray(props) && props.length > 0) {
-             // @ts-ignore
-             finalProps = props[0]; 
+             finalProps = props[0] as typeof props;
           }
 
           // Valores por defecto para evitar pantallas blancas
