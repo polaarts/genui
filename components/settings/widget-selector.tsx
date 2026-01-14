@@ -37,7 +37,10 @@ const AVAILABLE_WIDGETS = [
 ];
 
 export function WidgetSelector({ selectedWidgets, onChange }: WidgetSelectorProps) {
-  const toggleWidget = (widget: WidgetType) => {
+  const toggleWidget = (widget: WidgetType, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (selectedWidgets.includes(widget)) {
       onChange(selectedWidgets.filter(w => w !== widget));
     } else {
@@ -53,7 +56,8 @@ export function WidgetSelector({ selectedWidgets, onChange }: WidgetSelectorProp
         return (
           <button
             key={widget.type}
-            onClick={() => toggleWidget(widget.type)}
+            type="button"
+            onClick={(e) => toggleWidget(widget.type, e)}
             className={`w-full text-left p-4 rounded-2xl border-2 transition-all ${
               isSelected 
                 ? 'border-blue-500 bg-blue-50' 

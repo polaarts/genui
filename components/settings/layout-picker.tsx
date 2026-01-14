@@ -31,6 +31,12 @@ const LAYOUTS = [
 ];
 
 export function LayoutPicker({ value, onChange }: LayoutPickerProps) {
+  const handleLayoutChange = (layout: LayoutType, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onChange(layout);
+  };
+
   return (
     <div className="grid grid-cols-3 gap-3">
       {LAYOUTS.map((layout) => {
@@ -40,7 +46,8 @@ export function LayoutPicker({ value, onChange }: LayoutPickerProps) {
         return (
           <button
             key={layout.type}
-            onClick={() => onChange(layout.type)}
+            type="button"
+            onClick={(e) => handleLayoutChange(layout.type, e)}
             className={`p-4 rounded-2xl border-2 transition-all text-center ${
               isSelected
                 ? 'border-blue-500 bg-blue-50'
