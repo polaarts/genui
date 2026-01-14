@@ -2,7 +2,6 @@
 
 import { streamUI } from '@ai-sdk/rsc';
 import { openai } from '@ai-sdk/openai';
-import { z } from 'zod';
 
 // Importamos los Schemas que acabamos de crear
 import { expenseSummarySchema, transactionListSchema, pieChartSchema } from '@/lib/ai/schemas';
@@ -53,7 +52,7 @@ export async function getFinancialResponse(input: string, userProfile: UserProfi
     tools: {
       show_summary_card: {
         description: 'Muestra tarjeta de resumen. Úsala para "¿Cómo voy?", "Resumen" o estado general.',
-        parameters: expenseSummarySchema,
+        inputSchema: expenseSummarySchema,
         generate: async function* (props) {
           // 1. Loading State
           yield (
@@ -87,7 +86,7 @@ export async function getFinancialResponse(input: string, userProfile: UserProfi
       
       show_transaction_list: {
         description: 'Muestra tabla de transacciones. Úsala para "Detalles", "Lista" o "Uber".',
-        parameters: transactionListSchema,
+        inputSchema: transactionListSchema,
         generate: async function* (props) {
           yield <div className="h-64 bg-gray-100 rounded-md animate-pulse" />;
           return <TransactionDataGrid transactions={props.transactions || []} />;
@@ -96,7 +95,7 @@ export async function getFinancialResponse(input: string, userProfile: UserProfi
 
       show_category_chart: {
         description: 'Muestra gráfico. Úsala para "Distribución" o "Categorías".',
-        parameters: pieChartSchema,
+        inputSchema: pieChartSchema,
         generate: async function* (props) {
           yield <div className="h-64 bg-gray-100 rounded-xl animate-pulse" />;
           return <CategoryPieChart {...props} />;
