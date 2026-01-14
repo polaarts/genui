@@ -10,8 +10,8 @@ export const expenseSummarySchema = z.object({
     .describe('Un título corto y directo, ej: "Presupuesto excedido" o "Ahorro estable".'),
   message: z.string()
     .describe('Un mensaje explicativo de 1 o 2 frases. Adapta el tono al perfil del usuario.'),
-  totalAmount: z.number().optional()
-    .describe('Si es relevante, el monto total asociado al resumen (ej. total gastado).'),
+  totalAmount: z.number()
+    .describe('El monto total asociado al resumen (ej. total gastado).'),
 });
 
 // --- Schema auxiliar para las transacciones dentro de la grilla ---
@@ -32,7 +32,7 @@ export const transactionListSchema = z.object({
 
 // --- Schema para Componente C: CategoryPieChart (Extra) ---
 export const pieChartSchema = z.object({
-  title: z.string().optional(),
+  title: z.string().describe('Título del gráfico'),
   data: z.array(z.object({
     name: z.string(),
     value: z.number(),
@@ -62,22 +62,23 @@ export const alertsWidgetSchema = z.object({
   })),
 });
 
-// Schema principal del dashboard - contiene todos los widgets
+// Schema principal del dashboard - TODOS los widgets son requeridos para OpenAI strict mode
+// El frontend filtra qué widgets mostrar según la configuración del usuario
 export const dashboardOutputSchema = z.object({
-  summary: expenseSummarySchema.optional()
-    .describe('Datos para el widget de resumen financiero. Solo incluir si está en activeWidgets'),
+  summary: expenseSummarySchema
+    .describe('Datos para el widget de resumen financiero'),
   
-  transactions: transactionListSchema.optional()
-    .describe('Datos para el widget de transacciones. Filtrar y ordenar apropiadamente. Solo incluir si está en activeWidgets'),
+  transactions: transactionListSchema
+    .describe('Datos para el widget de transacciones. Filtrar y ordenar apropiadamente'),
   
-  chart: pieChartSchema.optional()
-    .describe('Datos para el gráfico de distribución de gastos por categoría. Solo incluir si está en activeWidgets'),
+  chart: pieChartSchema
+    .describe('Datos para el gráfico de distribución de gastos por categoría'),
   
-  budget: budgetWidgetSchema.optional()
-    .describe('Datos para el widget de progreso de presupuesto. Calcular porcentajes. Solo incluir si está en activeWidgets'),
+  budget: budgetWidgetSchema
+    .describe('Datos para el widget de progreso de presupuesto. Calcular porcentajes'),
   
-  alerts: alertsWidgetSchema.optional()
-    .describe('Alertas y notificaciones basadas en anomalías detectadas. Solo incluir si está en activeWidgets'),
+  alerts: alertsWidgetSchema
+    .describe('Alertas y notificaciones basadas en anomalías detectadas'),
 });
 
 export type DashboardOutput = z.infer<typeof dashboardOutputSchema>;

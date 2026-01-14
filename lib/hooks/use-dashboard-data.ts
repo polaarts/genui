@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-// import { generateDashboard } from '@/app/actions';
-import { generateDashboardMock } from '@/app/actions-mock'; // TEMPORAL: usando mock
+import { generateDashboard } from '@/app/actions';
 import { UserProfile } from '@/types';
 import { DashboardOutput } from '@/lib/ai/schemas';
 
@@ -23,8 +22,7 @@ export function useDashboardData(userProfile: UserProfile, shouldGenerate: boole
         setIsLoading(true);
         setError(null);
         
-        // const data = await generateDashboard(userProfile);
-        const data = await generateDashboardMock(userProfile); // TEMPORAL: usando mock
+        const data = await generateDashboard(userProfile);
         console.log('[useDashboardData] Data received:', data);
         setDashboardData(data);
       } catch (err) {
@@ -43,8 +41,7 @@ export function useDashboardData(userProfile: UserProfile, shouldGenerate: boole
   const refresh = async () => {
     try {
       setIsLoading(true);
-      // const data = await generateDashboard(userProfile);
-      const data = await generateDashboardMock(userProfile); // TEMPORAL: usando mock
+      const data = await generateDashboard(userProfile);
       setDashboardData(data);
     } catch (err) {
       console.error('Error refreshing dashboard:', err);

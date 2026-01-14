@@ -92,6 +92,9 @@ ${dashboardConfig.activeWidgets.map(w => `- ${w}`).join('\n')}
 # TU TAREA
 Analiza los datos financieros proporcionados y genera el contenido ADAPTADO al perfil ${persona}.
 NO generes un dashboard genérico. Cada perfil ve el MUNDO DIFERENTE.
+
+IMPORTANTE: Debes generar TODOS los widgets (summary, transactions, chart, budget, alerts).
+El frontend filtrará qué mostrar según la configuración del usuario.
 `;
 }
 
@@ -102,52 +105,12 @@ export function buildDashboardUserPrompt(
   return `
 Genera insights personalizados basándote en estos datos:
 
-# TRANSACCIONES (Últimas ${transactions.length})
+TRANSACCIONES (Últimas ${transactions.length})
 ${JSON.stringify(transactions, null, 2)}
 
-# PRESUPUESTOS
+PRESUPUESTOS
 ${JSON.stringify(budgets, null, 2)}
 
 IMPORTANTE: Respeta la metáfora visual del perfil del usuario al generar los datos.
-`;
-}
-
-
-# REGLAS CRÍTICAS
-- NO inventes transacciones que no existen
-- Calcula métricas reales basadas en los datos proporcionados
-- Adapta mensajes según el sentimiento (healthy/warning/danger)
-- Para usuario 'auditor': incluye porcentajes, comparaciones YoY, desviaciones
-- Para usuario 'relaxed': usa emojis, mensajes cortos, enfoque en lo positivo
-- Para usuario 'spender': destaca alertas, gastos inusuales, límites excedidos
-
-# FORMATO DE SALIDA
-Debes generar un objeto JSON con la siguiente estructura:
-{
-  "summary": { ... },           // Si 'summary' está en activeWidgets
-  "transactions": { ... },      // Si 'transactions' está en activeWidgets
-  "chart": { ... },            // Si 'chart' está en activeWidgets
-  "budget": { ... },           // Si 'budget' está en activeWidgets
-  "alerts": { ... }            // Si 'alerts' está en activeWidgets
-}
-
-Solo incluye los widgets que estén configurados como activos.
-`;
-}
-
-export function buildDashboardUserPrompt(
-  transactions: any[],
-  budgets: any[]
-): string {
-  return `
-Genera insights personalizados para el dashboard basándote en estos datos financieros:
-
-# TRANSACCIONES (Últimas ${transactions.length})
-${JSON.stringify(transactions, null, 2)}
-
-# PRESUPUESTOS
-${JSON.stringify(budgets, null, 2)}
-
-Analiza estos datos y genera contenido apropiado para cada widget configurado.
 `;
 }
