@@ -1,6 +1,6 @@
 'use server';
 
-import { streamUI } from 'ai/rsc';
+import { streamUI } from '@ai-sdk/rsc';
 import { openai } from '@ai-sdk/openai';
 import { z } from 'zod';
 
@@ -49,7 +49,7 @@ export async function getFinancialResponse(input: string, userProfile: UserProfi
       // Herramienta 1: Resumen (Para usuarios Relax o alertas generales)
       show_summary_card: {
         description: 'Muestra una tarjeta de resumen con sentimiento (bueno/malo). Úsalo para preguntas generales como "¿Cómo voy?" o alertas.',
-        parameters: expenseSummarySchema,
+        parameters: z.object(expenseSummarySchema.shape),
         generate: async function* (props) {
           yield <div className="animate-pulse h-32 bg-gray-100 rounded-3xl" />; // Loading state
           return <ExpenseSummaryCard {...props} />;
@@ -59,7 +59,7 @@ export async function getFinancialResponse(input: string, userProfile: UserProfi
       // Herramienta 2: Grilla (Para usuarios Auditor o detalles específicos)
       show_transaction_list: {
         description: 'Muestra una tabla detallada de transacciones. Úsalo cuando el usuario pida ver gastos específicos, historial o detalles.',
-        parameters: transactionListSchema,
+        parameters: z.object(transactionListSchema),
         generate: async function* (props) {
           yield <div className="animate-pulse h-64 bg-gray-100 rounded-md" />;
           return <TransactionDataGrid transactions={props.transactions} />;
