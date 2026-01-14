@@ -13,7 +13,16 @@ export const USER_SOFIA: UserProfile = {
       tone: 'empathetic',
       visualTheme: 'minimal'
     }
-  }
+  },
+  dashboardConfig: {
+    activeWidgets: ['summary', 'transactions', 'chart'],
+    widgetOrder: ['summary', 'transactions', 'chart'],
+    layout: 'grid-2',
+    defaultTimeRange: 'month',
+    autoRefresh: false,
+    refreshIntervalSeconds: 300
+  },
+  isOnboarded: true
 };
 
 export const USER_CARLOS: UserProfile = {
@@ -27,7 +36,16 @@ export const USER_CARLOS: UserProfile = {
       tone: 'technical',
       visualTheme: 'data-heavy'
     }
-  }
+  },
+  dashboardConfig: {
+    activeWidgets: ['summary', 'transactions', 'chart', 'budget', 'alerts'],
+    widgetOrder: ['alerts', 'budget', 'summary', 'transactions', 'chart'],
+    layout: 'grid-3',
+    defaultTimeRange: 'quarter',
+    autoRefresh: true,
+    refreshIntervalSeconds: 60
+  },
+  isOnboarded: true
 };
 
 // B. Transacciones
