@@ -1,9 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { UserProfile, UserPersona } from '@/types';
-import { WidgetSelector } from './widget-selector';
-import { LayoutPicker } from './layout-picker';
+import { UserProfile, UserPersona, PERSONA_LABELS, PERSONA_WIDGETS, PERSONA_LAYOUTS } from '@/types';
 import { Save, User } from 'lucide-react';
 
 interface SettingsFormProps {
@@ -12,9 +10,24 @@ interface SettingsFormProps {
 }
 
 const PERSONAS = [
-  { value: 'relaxed' as UserPersona, label: 'Relajado', emoji: '😌', description: 'Vista simple y amigable' },
-  { value: 'auditor' as UserPersona, label: 'Auditor', emoji: '🔍', description: 'Máximo detalle técnico' },
-  { value: 'spender' as UserPersona, label: 'Gastador', emoji: '💸', description: 'Alertas y control' },
+  { 
+    value: 'relaxed' as UserPersona, 
+    emoji: '🌿', 
+    label: 'Ansioso / Minimalista',
+    description: 'Prefiero no ver muchos números. Quiero saber si "voy bien" o no.' 
+  },
+  { 
+    value: 'auditor' as UserPersona, 
+    emoji: '📊', 
+    label: 'Auditor / Controlador',
+    description: 'Necesito ver TODO el detalle. Los números exactos me dan control.' 
+  },
+  { 
+    value: 'spender' as UserPersona, 
+    emoji: '🎯', 
+    label: 'Estratega / Orientado a Metas',
+    description: 'Me importa más cómo me acerco a mis objetivos que el pasado.' 
+  },
 ];
 
 export function SettingsForm({ initialProfile, onSave }: SettingsFormProps) {
@@ -25,26 +38,39 @@ export function SettingsForm({ initialProfile, onSave }: SettingsFormProps) {
     e.preventDefault();
     setIsSaving(true);
     
+    // Auto-asignar widgets y layout según el persona
+    const updatedProfile = {
+      ...profile,
+      dashboardConfig: {
+        ...profile.dashboardConfig,
+        activeWidgets: PERSONA_WIDGETS[profile.preferences.persona],
+        layout: PERSONA_LAYOUTS[profile.preferences.persona],
+      }
+    };
+    
     // Simular guardado async
     await new Promise(resolve => setTimeout(resolve, 500));
-    onSave(profile);
+    onSave(updatedProfile);
     
     setIsSaving(false);
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
-      {/* Sección 1: Perfil */}
+      {/* Sección 1: Perfil Psicológico */}
       <section>
-        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+        <h2 className="text-xl font-bold mb-2 flex items-center gap-2">
           <User className="w-5 h-5" />
-          Tu Perfil
+          ¿Cómo te relacionas con el dinero?
         </h2>
+        <p className="text-sm text-gray-600 mb-4">
+          Esto cambiará completamente cómo se muestra tu información financiera
+        </p>
         
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Nombre
+              Tu Nombre
             </label>
             <input
               type="text"
@@ -56,31 +82,31 @@ export function SettingsForm({ initialProfile, onSave }: SettingsFormProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tipo de Usuario
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Tu Arquetipo Financiero
             </label>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {PERSONAS.map((persona) => (
                 <button
                   key={persona.value}
                   type="button"
                   onClick={() => setProfile({
                     ...profile,
-                    preferences: { ...profile.preferences, persona: persona.value }
+                    preferences: { persona: persona.value }
                   })}
-                  className={`p-3 rounded-xl border-2 transition-all text-center ${
+                  className={`p-4 rounded-2xl border-2 transition-all text-left ${
                     profile.preferences.persona === persona.value
-                      ? 'border-blue-500 bg-blue-50'
+                      ? 'border-blue-500 bg-blue-50 shadow-md'
                       : 'border-gray-200 bg-white hover:border-gray-300'
                   }`}
                 >
-                  <div className="text-2xl mb-1">{persona.emoji}</div>
-                  <div className={`font-semibold text-sm ${
+                  <div className="text-3xl mb-2">{persona.emoji}</div>
+                  <div className={`font-bold text-sm mb-1 ${
                     profile.preferences.persona === persona.value ? 'text-blue-900' : 'text-gray-900'
                   }`}>
                     {persona.label}
                   </div>
-                  <div className={`text-xs mt-1 ${
+                  <div className={`text-xs ${
                     profile.preferences.persona === persona.value ? 'text-blue-700' : 'text-gray-500'
                   }`}>
                     {persona.description}
@@ -92,86 +118,19 @@ export function SettingsForm({ initialProfile, onSave }: SettingsFormProps) {
         </div>
       </section>
 
-      {/* Sección 2: Preferencias de UI */}
-      <section>
-        <h2 className="text-xl font-bold mb-4">Preferencias de Visualización</h2>
-        
-        <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-            <div>
-              <h4 className="font-semibold">Densidad</h4>
-              <p className="text-sm text-gray-600">Espaciado de elementos</p>
-            </div>
-            <select
-              value={profile.preferences.uiConfig.density}
-              onChange={(e) => setProfile({
-                ...profile,
-                preferences: {
-                  ...profile.preferences,
-                  uiConfig: {
-                    ...profile.preferences.uiConfig,
-                    density: e.target.value as 'compact' | 'comfortable'
-                  }
-                }
-              })}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-            >
-              <option value="comfortable">Cómodo</option>
-              <option value="compact">Compacto</option>
-            </select>
-          </div>
-
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-            <div>
-              <h4 className="font-semibold">Mostrar Decimales</h4>
-              <p className="text-sm text-gray-600">Precisión en montos</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setProfile({
-                ...profile,
-                preferences: {
-                  ...profile.preferences,
-                  uiConfig: {
-                    ...profile.preferences.uiConfig,
-                    showDecimals: !profile.preferences.uiConfig.showDecimals
-                  }
-                }
-              })}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                profile.preferences.uiConfig.showDecimals ? 'bg-blue-600' : 'bg-gray-300'
-              }`}
-            >
-              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                profile.preferences.uiConfig.showDecimals ? 'translate-x-6' : 'translate-x-1'
-              }`} />
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Sección 3: Widgets */}
-      <section>
-        <h2 className="text-xl font-bold mb-4">Widgets Activos</h2>
-        <WidgetSelector
-          selectedWidgets={profile.dashboardConfig.activeWidgets}
-          onChange={(widgets) => setProfile({
-            ...profile,
-            dashboardConfig: { ...profile.dashboardConfig, activeWidgets: widgets }
-          })}
-        />
-      </section>
-
-      {/* Sección 4: Layout */}
-      <section>
-        <h2 className="text-xl font-bold mb-4">Diseño del Dashboard</h2>
-        <LayoutPicker
-          value={profile.dashboardConfig.layout}
-          onChange={(layout) => setProfile({
-            ...profile,
-            dashboardConfig: { ...profile.dashboardConfig, layout }
-          })}
-        />
+      {/* Información sobre widgets automáticos */}
+      <section className="bg-blue-50 border border-blue-200 rounded-2xl p-6">
+        <h3 className="font-semibold text-blue-900 mb-2">
+          🧪 Tu dashboard se adapta automáticamente
+        </h3>
+        <p className="text-sm text-blue-700 mb-3">
+          Según tu arquetipo, mostraremos diferentes widgets y layouts:
+        </p>
+        <ul className="text-sm text-blue-700 space-y-1 list-disc list-inside">
+          <li><strong>Ansioso:</strong> Solo resumen visual, gráficos y alertas positivas</li>
+          <li><strong>Auditor:</strong> Todos los widgets con máximo detalle</li>
+          <li><strong>Estratega:</strong> Enfoque en metas, presupuesto y alertas de logros</li>
+        </ul>
       </section>
 
       {/* Botón de Guardar */}

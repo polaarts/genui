@@ -1,4 +1,4 @@
-import { UserProfile, Transaction, Budget } from '@/types';
+import { UserProfile, Transaction, Budget, PERSONA_WIDGETS, PERSONA_LAYOUTS } from '@/types';
 
 //A. Perfiles de Usuario
 
@@ -6,18 +6,12 @@ export const USER_SOFIA: UserProfile = {
   id: 'u_relaxed_01',
   name: 'Sofía (Estudiante)',
   preferences: {
-    persona: 'relaxed',
-    uiConfig: {
-      density: 'comfortable',
-      showDecimals: false, // Sofía no quiere ver centavos
-      tone: 'empathetic',
-      visualTheme: 'minimal'
-    }
+    persona: 'relaxed', // Ansioso/Minimalista
   },
   dashboardConfig: {
-    activeWidgets: ['summary', 'transactions', 'chart'],
-    widgetOrder: ['summary', 'transactions', 'chart'],
-    layout: 'grid-2',
+    activeWidgets: PERSONA_WIDGETS.relaxed,
+    widgetOrder: PERSONA_WIDGETS.relaxed,
+    layout: PERSONA_LAYOUTS.relaxed,
     defaultTimeRange: 'month',
     autoRefresh: false,
     refreshIntervalSeconds: 300
@@ -29,18 +23,12 @@ export const USER_CARLOS: UserProfile = {
   id: 'u_auditor_02',
   name: 'Carlos (Contador)',
   preferences: {
-    persona: 'auditor',
-    uiConfig: {
-      density: 'compact',
-      showDecimals: true, // Carlos necesita precisión
-      tone: 'technical',
-      visualTheme: 'data-heavy'
-    }
+    persona: 'auditor', // Auditor/Controlador
   },
   dashboardConfig: {
-    activeWidgets: ['summary', 'transactions', 'chart', 'budget', 'alerts'],
-    widgetOrder: ['alerts', 'budget', 'summary', 'transactions', 'chart'],
-    layout: 'grid-3',
+    activeWidgets: PERSONA_WIDGETS.auditor,
+    widgetOrder: PERSONA_WIDGETS.auditor,
+    layout: PERSONA_LAYOUTS.auditor,
     defaultTimeRange: 'quarter',
     autoRefresh: true,
     refreshIntervalSeconds: 60
