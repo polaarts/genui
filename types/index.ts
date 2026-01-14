@@ -11,10 +11,24 @@ export interface UserPreferences {
   };
 }
 
+// 1.1 Configuración del Dashboard
+export type WidgetType = 'summary' | 'transactions' | 'chart' | 'budget' | 'alerts';
+
+export interface DashboardConfig {
+  activeWidgets: WidgetType[];
+  widgetOrder: string[];
+  layout: 'grid-2' | 'grid-3' | 'list';
+  defaultTimeRange: 'week' | 'month' | 'quarter' | 'year';
+  autoRefresh: boolean;
+  refreshIntervalSeconds: number;
+}
+
 export interface UserProfile {
   id: string;
   name: string;
   preferences: UserPreferences;
+  dashboardConfig: DashboardConfig;
+  isOnboarded: boolean;
 }
 
 // 2. Datos Financieros
