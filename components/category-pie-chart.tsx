@@ -41,7 +41,7 @@ export function CategoryPieChart({ data, title = "Distribución de Gastos" }: Ca
               ))}
             </Pie>
             <Tooltip 
-              formatter={(value: number) => formatCurrency(value, false)}
+              formatter={(value: number | undefined) => formatCurrency(value ?? 0, false)}
               contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
             />
             <Legend 

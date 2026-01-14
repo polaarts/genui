@@ -1,7 +1,7 @@
 import { MOCK_TRANSACTIONS } from '@/lib/mock-data';
-import { ExpenseSummaryCard } from '@/components/ExpenseSummaryCard';
-import { TransactionDataGrid } from '@/components/TransactionDataGrid';
-import { CategoryPieChart } from '@/components/CategoryPieChart';
+import { ExpenseSummaryCard } from '@/components/expense-summary-card';
+import { TransactionDataGrid } from '@/components/transaction-data-grid';
+import { CategoryPieChart } from '@/components/category-pie-chart';
 
 export default function Home() {
   return (
