@@ -18,60 +18,87 @@ import { UserProfile } from '@/types';
 
 export async function getFinancialResponse(input: string, userProfile: UserProfile) {
   
-  // Construimos un Prompt de Sistema dinámico basado en el perfil
   const SYSTEM_PROMPT = `
-    Eres Financial, un asistente financiero experto.
+    Eres el motor visual de FinaFlow.
     
-    PERFIL DEL USUARIO:
-    - Nombre: ${userProfile.name}
-    - Rol: ${userProfile.preferences.persona} (Si es 'auditor', prefiere tablas y datos duros. Si es 'relaxed', prefiere resúmenes y lenguaje simple).
-    - Tono: ${userProfile.preferences.uiConfig.tone}
+    TU OBJETIVO: Elegir la herramienta visual correcta para la pregunta del usuario.
     
-    DATOS ACTUALES (Contexto para responder):
+    DATOS DEL USUARIO:
+    - Perfil: ${userProfile.preferences.persona}
     - Transacciones: ${JSON.stringify(MOCK_TRANSACTIONS)}
     - Presupuestos: ${JSON.stringify(MOCK_BUDGETS)}
-    
-    TU OBJETIVO:
-    Analiza la pregunta del usuario y decide qué componente visual (Herramienta) representa mejor la respuesta.
-    NO inventes datos financieros. Usa estrictamente los JSON proporcionados arriba para llenar los componentes.
+
+    INSTRUCCIONES DE FORMATO (CRÍTICO):
+    1. DEBES llamar a una función ("tool call"). NO respondas con texto.
+    2. Los parámetros deben ser un OBJETO JSON simple { ... }, NO un array [ ... ].
+    3. Si el usuario pregunta "¿Cómo voy?", calcula si ha gastado mucho comparando el 'spent' vs 'limit' en los Presupuestos y genera una 'show_summary_card'.
   `;
 
   const result = await streamUI({
-    model: openai('gpt-4o-mini'), // Usamos mini para velocidad en el MVP
+    model: openai('gpt-4o-mini'), 
     system: SYSTEM_PROMPT,
     prompt: input,
+    temperature: 0, // Sin creatividad para evitar alucinaciones de formato
+    
+    // OBLIGATORIO: Forzamos a la IA a usar una herramienta. 
+    // Si intenta hablar texto, esto bloqueará esa salida y la obligará a estructurarse.
+    toolChoice: 'required', 
+
+    // Si algo sale mal y genera texto, lo veremos en rojo para diferenciarlo del amarillo anterior
     text: ({ content, done }) => {
-      // Si la IA decide hablar texto plano en lugar de usar UI
-      if (done) return <div className="p-4 text-gray-600">{content}</div>;
-      return <div className="p-4 text-gray-400 animate-pulse">Generando respuesta...</div>;
+      if (done) return <div className="p-4 bg-red-50 text-red-600 border border-red-200 rounded-lg">Error: La IA generó texto en lugar de UI: {content}</div>;
+      return <div>Generando interfaz...</div>;
     },
+    
     tools: {
-      // Herramienta 1: Resumen (Para usuarios Relax o alertas generales)
       show_summary_card: {
-        description: 'Muestra una tarjeta de resumen con sentimiento (bueno/malo). Úsalo para preguntas generales como "¿Cómo voy?" o alertas.',
-        parameters: z.object(expenseSummarySchema.shape),
+        description: 'Muestra tarjeta de resumen. Úsala para "¿Cómo voy?", "Resumen" o estado general.',
+        parameters: expenseSummarySchema,
         generate: async function* (props) {
-          yield <div className="animate-pulse h-32 bg-gray-100 rounded-3xl" />; // Loading state
-          return <ExpenseSummaryCard {...props} />;
+          // 1. Loading State
+          yield (
+            <div className="p-6 rounded-3xl border-2 border-gray-100 bg-white shadow-sm h-40 flex flex-col items-center justify-center gap-3">
+               <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+               <p className="text-sm text-gray-400 font-medium animate-pulse">Analizando tus finanzas...</p>
+            </div>
+          );
+          
+          // 2. Corrección de errores "al vuelo"
+          // Si la IA nos manda un array por error (ej: props[0]), intentamos arreglarlo.
+          let finalProps = props;
+          // @ts-ignore
+          if (Array.isArray(props) && props.length > 0) {
+             // @ts-ignore
+             finalProps = props[0]; 
+          }
+
+          // Valores por defecto para evitar pantallas blancas
+          const safeProps = {
+            sentiment: finalProps.sentiment || 'warning',
+            title: finalProps.title || 'Resumen del Mes',
+            message: finalProps.message || 'Revisando tus movimientos...',
+            totalAmount: finalProps.totalAmount
+          };
+          
+          // 3. Render final
+          return <ExpenseSummaryCard {...safeProps} />;
         },
       },
       
-      // Herramienta 2: Grilla (Para usuarios Auditor o detalles específicos)
       show_transaction_list: {
-        description: 'Muestra una tabla detallada de transacciones. Úsalo cuando el usuario pida ver gastos específicos, historial o detalles.',
-        parameters: z.object(transactionListSchema),
+        description: 'Muestra tabla de transacciones. Úsala para "Detalles", "Lista" o "Uber".',
+        parameters: transactionListSchema,
         generate: async function* (props) {
-          yield <div className="animate-pulse h-64 bg-gray-100 rounded-md" />;
-          return <TransactionDataGrid transactions={props.transactions} />;
+          yield <div className="h-64 bg-gray-100 rounded-md animate-pulse" />;
+          return <TransactionDataGrid transactions={props.transactions || []} />;
         },
       },
 
-      // Herramienta 3: Gráfico (Para visualizar distribución)
       show_category_chart: {
-        description: 'Muestra un gráfico de pastel. Úsalo para preguntas sobre "dónde se fue mi dinero" o distribución de gastos.',
+        description: 'Muestra gráfico. Úsala para "Distribución" o "Categorías".',
         parameters: pieChartSchema,
         generate: async function* (props) {
-          yield <div className="animate-pulse h-64 bg-gray-100 rounded-xl" />;
+          yield <div className="h-64 bg-gray-100 rounded-xl animate-pulse" />;
           return <CategoryPieChart {...props} />;
         }
       }
