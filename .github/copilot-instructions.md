@@ -1,103 +1,222 @@
 # GenUI - AI Copilot Instructions
 
 ## Project Overview
-GenUI is a **Next.js 16 financial dashboard** that uses **Vercel AI SDK RSC (React Server Components)** to stream React components as AI responses. The AI doesn't return text—it returns **fully rendered UI components** based on user queries.
+GenUI es un **dashboard financiero SaaS con Next.js 16** que usa **Vercel AI SDK RSC** para generar interfaces dinámicas basadas en la configuración del usuario. La IA no devuelve texto—devuelve **componentes React renderizados** que conforman el dashboard personalizado.
 
-**Core Architecture**: AI-powered UI generation via `streamUI()` + Server Actions + Tool Calling pattern.
+**Arquitectura Core**: Dashboard adaptativo via `streamUI()` + Server Actions + Configuración de Usuario + Tool Calling.
 
-## Critical Architectural Patterns
+---
 
-### 1. AI Response Pattern: UI as Output (NOT Text)
-- **Primary file**: [app/actions.tsx](app/actions.tsx)
-- Server Action `getFinancialResponse()` uses `streamUI()` with `toolChoice: 'required'`
-- AI MUST call a tool (never return plain text)
-- Each tool returns React components: `ExpenseSummaryCard`, `TransactionDataGrid`, `CategoryPieChart`
-- Loading states use generator functions (`async function*`) to yield spinners before final UI
+## Arquitectura del Dashboard (NO es un Chat)
 
-**Example flow**:
+### Flujo Principal
+```
+Usuario nuevo → Onboarding (Configuración inicial)
+                      ↓
+              Guardar preferencias en estado/storage
+                      ↓
+Usuario existente → Cargar configuración → Generar Dashboard
+                      ↓
+              Cambio de configuración detectado
+                      ↓
+              Skeleton/Loading Animation
+                      ↓
+              AI regenera componentes que hacen "match"
+                      ↓
+              Dashboard actualizado
+```
+
+### Componentes del Sistema
+
+1. **Página de Configuración** (`app/settings/page.tsx`)
+   - Formulario de preferencias del usuario
+   - Se muestra en onboarding (primer ingreso) o accesible desde header
+   - Guarda: `persona`, `density`, `showDecimals`, `tone`, `visualTheme`, `widgetsActivos`
+
+2. **Dashboard Principal** (`app/page.tsx`)
+   - NO es un chat, es una grilla de widgets
+   - Los widgets se generan según la configuración del usuario
+   - Detecta cambios de configuración y regenera solo widgets afectados
+
+3. **Sistema de Widgets** (componentes modulares)
+   - `ExpenseSummaryCard` - Resumen financiero
+   - `TransactionDataGrid` - Tabla de transacciones
+   - `CategoryPieChart` - Distribución por categorías
+   - Cada widget tiene su skeleton de loading
+
+---
+
+## Patrones Críticos
+
+### 1. Configuración como Driver de UI
 ```tsx
-// User asks: "¿Cómo voy?" → AI calls show_summary_card tool → Returns ExpenseSummaryCard component
+// La configuración del usuario determina QUÉ widgets mostrar y CÓMO
+interface DashboardConfig {
+  widgets: ('summary' | 'transactions' | 'chart' | 'budget')[];
+  layout: 'grid' | 'list';
+  refreshInterval?: number;
+}
+
+// El AI recibe esta config y genera los componentes correspondientes
+const dashboard = await generateDashboard(userConfig, financialData);
+```
+
+### 2. Detección de Cambios y Regeneración
+```tsx
+// Cuando cambia la configuración, mostrar skeletons y regenerar
+useEffect(() => {
+  setIsRegenerating(true);
+  regenerateDashboard(newConfig)
+    .finally(() => setIsRegenerating(false));
+}, [configHash]); // Hash de configuración para detectar cambios
+```
+
+### 3. Skeleton Loading por Widget
+```tsx
+// Cada widget tiene su propio skeleton mientras se genera
+{isLoading ? (
+  <DashboardSkeleton layout={config.layout} widgetCount={config.widgets.length} />
+) : (
+  <DashboardGrid widgets={generatedWidgets} />
+)}
+```
+
+### 4. AI Tool Pattern (Actualizado para Dashboard)
+```tsx
 tools: {
-  show_summary_card: {
-    parameters: expenseSummarySchema, // Zod schema defines AI output structure
-    generate: async function* (props) {
-      yield <LoadingSpinner />; // Step 1: Show loading
-      return <ExpenseSummaryCard {...props} />; // Step 2: Show final UI
+  generate_dashboard_widget: {
+    parameters: dashboardWidgetSchema,
+    generate: async function* ({ widgetType, data, config }) {
+      yield <WidgetSkeleton type={widgetType} />;
+      
+      switch(widgetType) {
+        case 'summary': return <ExpenseSummaryCard {...data} config={config} />;
+        case 'chart': return <CategoryPieChart {...data} config={config} />;
+        // ... más widgets
+      }
     }
   }
 }
 ```
 
-### 2. Schema-Driven Development
-- **All AI outputs are validated via Zod schemas** in [lib/ai/schemas.ts](lib/ai/schemas.ts)
-- Schemas include `.describe()` hints that guide the AI's behavior
-- Example: `sentiment: z.enum(['healthy', 'warning', 'danger']).describe('Healthy=Verde, Warning=Amarillo')`
-- **Always use existing schemas** when modifying tools—don't freeform parameters
+---
 
-### 3. User Persona System
-- Two user profiles: `USER_SOFIA` (relaxed/student) and `USER_CARLOS` (auditor/accountant) in [lib/mock-data.ts](lib/mock-data.ts)
-- Persona affects:
-  - UI density (`compact` vs `comfortable`)
-  - Decimal precision (`showDecimals`)
-  - Message tone (`empathetic` vs `technical`)
-- **Pass `currentUser` profile to Server Actions** to adapt AI responses
+## Schema-Driven Development
+- **Todos los outputs de AI validados via Zod** en [lib/ai/schemas.ts](lib/ai/schemas.ts)
+- Schemas incluyen `.describe()` para guiar el comportamiento de la IA
+- **Siempre usar schemas existentes** al modificar tools
 
-### 4. Error Recovery Pattern
-In [app/actions.tsx](app/actions.tsx#L74-L77), props from AI are validated with defensive checks:
+### Schemas Clave a Crear/Extender
 ```tsx
-// Handle AI returning arrays by mistake
-if (Array.isArray(props) && props.length > 0) {
-  finalProps = props[0];
-}
-// Provide safe defaults to prevent white screens
-const safeProps = { sentiment: finalProps.sentiment || 'warning', ... };
+// lib/ai/schemas.ts
+export const dashboardConfigSchema = z.object({
+  widgets: z.array(z.enum(['summary', 'transactions', 'chart', 'budget'])),
+  layout: z.enum(['grid', 'list']),
+  density: z.enum(['compact', 'comfortable']),
+  // ...
+});
+
+export const widgetPropsSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('summary'), ...expenseSummarySchema.shape }),
+  z.object({ type: z.literal('chart'), ...pieChartSchema.shape }),
+  // ...
+]);
 ```
 
-## Development Commands
-- `npm run dev` - Start dev server (http://localhost:3000)
-- `npm run build` - Production build
+---
+
+## Sistema de Configuración de Usuario
+
+### Parámetros de Configuración (existentes en types/)
+```tsx
+interface UserPreferences {
+  persona: 'relaxed' | 'auditor' | 'spender';
+  uiConfig: {
+    density: 'compact' | 'comfortable';
+    showDecimals: boolean;
+    tone: 'empathetic' | 'technical' | 'urgent';
+    visualTheme: 'minimal' | 'data-heavy';
+  };
+}
+```
+
+### Parámetros Nuevos a Agregar
+```tsx
+interface DashboardPreferences {
+  activeWidgets: WidgetType[];      // Qué widgets mostrar
+  widgetOrder: string[];            // Orden de widgets
+  defaultTimeRange: 'week' | 'month' | 'quarter';
+  autoRefresh: boolean;
+  refreshInterval: number;          // En segundos
+}
+```
+
+---
+
+## Estructura de Archivos
+
+```
+app/
+├── page.tsx                 # Dashboard principal (NO chat)
+├── settings/
+│   └── page.tsx            # Página de configuración
+├── onboarding/
+│   └── page.tsx            # Flujo de primer ingreso
+├── actions.tsx             # Server Actions para AI
+└── layout.tsx              # Layout con detección de config
+
+components/
+├── dashboard/
+│   ├── dashboard-grid.tsx  # Contenedor de widgets
+│   ├── dashboard-skeleton.tsx
+│   └── widget-wrapper.tsx  # HOC para cada widget
+├── widgets/
+│   ├── expense-summary-card.tsx
+│   ├── transaction-data-grid.tsx
+│   └── category-pie-chart.tsx
+├── settings/
+│   ├── settings-form.tsx
+│   └── widget-selector.tsx
+└── ui/                     # shadcn components
+
+lib/
+├── ai/
+│   ├── schemas.ts          # Zod schemas
+│   └── prompts.ts          # System prompts
+├── hooks/
+│   ├── use-config.ts       # Hook para configuración
+│   └── use-dashboard.ts    # Hook para estado del dashboard
+└── mock-data.ts
+```
+
+---
+
+## Comandos de Desarrollo
+- `npm run dev` - Servidor de desarrollo (http://localhost:3000)
+- `npm run build` - Build de producción
 - `npm run lint` - ESLint check
 
-## Component Guidelines
+## Convenciones de Estilo
+- **Tailwind CSS v4** con shadcn/ui (config: [components.json](components.json))
+- Design system: `rounded-3xl`, sombras sutiles, colores por sentimiento
+- Iconos de `lucide-react`
+- **Nunca usar inline styles**—solo clases de Tailwind
+- Skeletons: usar `animate-pulse` con formas que coincidan con el widget final
 
-### Adding New AI Tools
-1. Define Zod schema in [lib/ai/schemas.ts](lib/ai/schemas.ts)
-2. Create React component in `components/`
-3. Register tool in [app/actions.tsx](app/actions.tsx) `tools` object
-4. Add `.describe()` hints to guide AI when to use it
-5. Include loading state via generator pattern
+---
 
-### Styling Conventions
-- Uses **Tailwind CSS v4** with shadcn/ui components (config: [components.json](components.json))
-- Design system: rounded-3xl cards, subtle shadows, sentiment-based colors
-- Icons from `lucide-react`
-- **Never use inline styles**—use Tailwind utility classes
+## Flujo de Testing
 
-### Data Flow
-```
-User Input → Server Action (getFinancialResponse) 
-  → OpenAI GPT-4o-mini with MOCK_TRANSACTIONS context
-  → Tool Call (validated by Zod)
-  → React Component Stream
-  → Client State Update (messages array)
-```
+1. **Onboarding**: Verificar que usuario nuevo ve página de configuración
+2. **Dashboard Load**: Verificar que config genera widgets correctos
+3. **Config Change**: Cambiar preferencia → Ver skeleton → Ver widget actualizado
+4. **Persona Switch**: Cambiar entre Sofía/Carlos → Dashboard se adapta
 
-## Key Files to Reference
-- [app/actions.tsx](app/actions.tsx) - AI orchestration & tool definitions
-- [lib/ai/schemas.ts](lib/ai/schemas.ts) - Zod schemas for all AI outputs
-- [lib/mock-data.ts](lib/mock-data.ts) - User profiles & transaction data
-- [app/page.tsx](app/page.tsx) - Chat UI with persona switcher
+---
 
-## Common Pitfalls
-1. **Don't allow AI text responses**: Always use `toolChoice: 'required'` in streamUI
-2. **Schema mismatches**: AI tool parameters MUST match Zod schema structure
-3. **Missing loading states**: Use generator functions to show spinners during compute
-4. **Ignoring persona context**: Always inject `userProfile` into system prompts
-
-## Testing User Flows
-Use quick action pills in [app/page.tsx](app/page.tsx#L185-L197) to test:
-- "📊 Resumen mensual" → Tests `show_summary_card` tool
-- "🚗 Detalle transporte" → Tests `show_transaction_list` with filtering
-- "🍩 Distribución gastos" → Tests `show_category_chart`
-
-Switch between Sofía/Carlos modes to verify persona-aware responses.
+## Pitfalls Comunes
+1. **No permitir respuestas de texto de AI**: Siempre `toolChoice: 'required'`
+2. **Regenerar todo el dashboard**: Solo regenerar widgets afectados por el cambio
+3. **Olvidar skeletons**: Cada widget DEBE tener su estado de loading
+4. **Config no persistida**: Usar localStorage o estado global para persistir
+5. **No detectar cambios**: Usar hash de configuración para comparar cambios
