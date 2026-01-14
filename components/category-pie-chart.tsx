@@ -20,17 +20,17 @@ const CustomLegend = ({ payload }: { payload?: Array<{ value: string; color: str
   if (!payload) return null;
   
   return (
-    <div className="flex flex-wrap gap-4 justify-center mt-6">
+    <div className="flex flex-wrap gap-3 justify-center mt-4">
       {payload.map((entry, index) => (
         <div key={`legend-${index}`} className="flex items-center gap-2">
           <div 
-            className="w-4 h-4 rounded-full" 
+            className="w-3 h-3 rounded-full" 
             style={{ backgroundColor: entry.color }}
           />
-          <span className="text-sm font-medium text-gray-700">
+          <span className="text-gray-700 text-xs font-medium">
             {entry.value}
           </span>
-          <span className="text-sm font-bold text-gray-900">
+          <span className="text-gray-900 text-xs font-bold font-mono">
             ${entry.payload.value.toLocaleString()}
           </span>
         </div>
@@ -45,16 +45,16 @@ export function CategoryPieChart({ data }: CategoryPieChartProps) {
 
   return (
     <div className="w-full flex flex-col items-center">      
-      <div className="h-100 w-full relative">
+      <div className="h-64 w-full relative">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
               data={cleanData}
               cx="50%"
-              cy="45%"
-              innerRadius={80}
-              outerRadius={120}
-              paddingAngle={3}
+              cy="50%"
+              innerRadius={50}
+              outerRadius={80}
+              paddingAngle={2}
               dataKey="value"
             >
               {cleanData.map((entry, index) => (
@@ -68,24 +68,26 @@ export function CategoryPieChart({ data }: CategoryPieChartProps) {
             <Tooltip 
               formatter={(value: number | undefined) => formatCurrency(value ?? 0, false)}
               contentStyle={{ 
-                borderRadius: '16px', 
-                border: 'none', 
-                boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
-                padding: '12px 16px'
+                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                borderRadius: '12px', 
+                border: '1px solid rgba(0, 0, 0, 0.1)', 
+                boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                padding: '8px 12px',
+                color: '#111'
               }}
             />
             <Legend 
               content={<CustomLegend />}
               verticalAlign="bottom" 
-              height={60}
+              height={50}
             />
           </PieChart>
         </ResponsiveContainer>
         
         {/* Total en el centro del donut */}
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-[75%] text-center">
-          <div className="text-gray-500 text-sm font-medium mb-1">Total Gastos</div>
-          <div className="text-3xl font-bold text-gray-900">
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
+          <div className="text-gray-500 text-xs font-medium mb-0.5">Total</div>
+          <div className="text-gray-900 text-2xl font-bold font-mono">
             ${total.toLocaleString()}
           </div>
         </div>
