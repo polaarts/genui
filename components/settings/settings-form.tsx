@@ -59,30 +59,30 @@ export function SettingsForm({ initialProfile, onSave }: SettingsFormProps) {
     <form onSubmit={handleSubmit} className="space-y-8">
       {/* Sección 1: Perfil Psicológico */}
       <section>
-        <h2 className="text-xl font-bold mb-2 flex items-center gap-2">
+        <h2 className="text-xl font-bold mb-2 flex items-center gap-2 text-white">
           <User className="w-5 h-5" />
           ¿Cómo te relacionas con el dinero?
         </h2>
-        <p className="text-sm text-gray-600 mb-4">
+        <p className="text-sm text-slate-400 mb-4">
           Esto cambiará completamente cómo se muestra tu información financiera
         </p>
         
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-slate-300 mb-2">
               Tu Nombre
             </label>
             <input
               type="text"
               value={profile.name}
               onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full px-4 py-2 border border-white/10 bg-white/5 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-white placeholder:text-slate-500"
               placeholder="Tu nombre"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+            <label className="block text-sm font-medium text-slate-300 mb-3">
               Tu Arquetipo Financiero
             </label>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -96,18 +96,18 @@ export function SettingsForm({ initialProfile, onSave }: SettingsFormProps) {
                   })}
                   className={`p-4 rounded-2xl border-2 transition-all text-left ${
                     profile.preferences.persona === persona.value
-                      ? 'border-blue-500 bg-blue-50 shadow-md'
-                      : 'border-gray-200 bg-white hover:border-gray-300'
+                      ? 'border-blue-500 bg-blue-500/10 shadow-md'
+                      : 'border-white/10 bg-white/5 hover:border-white/20'
                   }`}
                 >
                   <div className="text-3xl mb-2">{persona.emoji}</div>
                   <div className={`font-bold text-sm mb-1 ${
-                    profile.preferences.persona === persona.value ? 'text-blue-900' : 'text-gray-900'
+                    profile.preferences.persona === persona.value ? 'text-blue-400' : 'text-white'
                   }`}>
                     {persona.label}
                   </div>
                   <div className={`text-xs ${
-                    profile.preferences.persona === persona.value ? 'text-blue-700' : 'text-gray-500'
+                    profile.preferences.persona === persona.value ? 'text-blue-300' : 'text-slate-400'
                   }`}>
                     {persona.description}
                   </div>
@@ -119,14 +119,14 @@ export function SettingsForm({ initialProfile, onSave }: SettingsFormProps) {
       </section>
 
       {/* Información sobre widgets automáticos */}
-      <section className="bg-blue-50 border border-blue-200 rounded-2xl p-6">
-        <h3 className="font-semibold text-blue-900 mb-2">
+      <section className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-6">
+        <h3 className="font-semibold text-blue-400 mb-2">
           🧪 Tu dashboard se adapta automáticamente
         </h3>
-        <p className="text-sm text-blue-700 mb-3">
+        <p className="text-sm text-blue-300 mb-3">
           Según tu arquetipo, mostraremos diferentes widgets y layouts:
         </p>
-        <ul className="text-sm text-blue-700 space-y-1 list-disc list-inside">
+        <ul className="text-sm text-blue-300 space-y-1 list-disc list-inside">
           <li><strong>Ansioso:</strong> Solo resumen visual, gráficos y alertas positivas</li>
           <li><strong>Auditor:</strong> Todos los widgets con máximo detalle</li>
           <li><strong>Estratega:</strong> Enfoque en metas, presupuesto y alertas de logros</li>
@@ -134,7 +134,7 @@ export function SettingsForm({ initialProfile, onSave }: SettingsFormProps) {
       </section>
 
       {/* Botón de Guardar */}
-      <div className="sticky bottom-0 pt-6 pb-4 bg-white border-t">
+      <div className="sticky bottom-0 pt-6 pb-4 bg-slate-900/40 backdrop-blur-xl border-t border-white/10">
         <button
           type="submit"
           disabled={isSaving}

@@ -50,20 +50,20 @@ export function LayoutPicker({ value, onChange }: LayoutPickerProps) {
             onClick={(e) => handleLayoutChange(layout.type, e)}
             className={`p-4 rounded-2xl border-2 transition-all text-center ${
               isSelected
-                ? 'border-blue-500 bg-blue-50'
-                : 'border-gray-200 bg-white hover:border-gray-300'
+                ? 'border-blue-500 bg-blue-500/10'
+                : 'border-white/10 bg-white/5 hover:border-white/20'
             }`}
           >
             <Icon className={`w-8 h-8 mx-auto mb-2 ${
-              isSelected ? 'text-blue-600' : 'text-gray-400'
+              isSelected ? 'text-blue-400' : 'text-slate-500'
             }`} />
             <h4 className={`font-semibold text-sm ${
-              isSelected ? 'text-blue-900' : 'text-gray-900'
+              isSelected ? 'text-blue-400' : 'text-white'
             }`}>
               {layout.label}
             </h4>
             <p className={`text-xs mt-1 ${
-              isSelected ? 'text-blue-700' : 'text-gray-500'
+              isSelected ? 'text-blue-300' : 'text-slate-400'
             }`}>
               {layout.description}
             </p>

@@ -60,21 +60,21 @@ export function WidgetSelector({ selectedWidgets, onChange }: WidgetSelectorProp
             onClick={(e) => toggleWidget(widget.type, e)}
             className={`w-full text-left p-4 rounded-2xl border-2 transition-all ${
               isSelected 
-                ? 'border-blue-500 bg-blue-50' 
-                : 'border-gray-200 bg-white hover:border-gray-300'
+                ? 'border-blue-500 bg-blue-500/10' 
+                : 'border-white/10 bg-white/5 hover:border-white/20'
             }`}
           >
             <div className="flex items-start gap-3">
               {isSelected ? (
-                <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <CheckCircle className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
               ) : (
-                <Circle className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                <Circle className="w-5 h-5 text-slate-500 mt-0.5 flex-shrink-0" />
               )}
               <div className="flex-1">
-                <h4 className={`font-semibold ${isSelected ? 'text-blue-900' : 'text-gray-900'}`}>
+                <h4 className={`font-semibold ${isSelected ? 'text-blue-400' : 'text-white'}`}>
                   {widget.label}
                 </h4>
-                <p className={`text-sm mt-1 ${isSelected ? 'text-blue-700' : 'text-gray-500'}`}>
+                <p className={`text-sm mt-1 ${isSelected ? 'text-blue-300' : 'text-slate-400'}`}>
                   {widget.description}
                 </p>
               </div>
